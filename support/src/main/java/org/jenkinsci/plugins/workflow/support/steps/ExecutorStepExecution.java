@@ -43,7 +43,6 @@ import org.jenkinsci.plugins.durabletask.executors.ContinuedTask;
 import org.jenkinsci.plugins.workflow.flow.FlowExecution;
 import org.jenkinsci.plugins.workflow.graph.FlowNode;
 import org.jenkinsci.plugins.workflow.steps.AbstractStepExecutionImpl;
-import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepContextParameter;
 import org.jenkinsci.plugins.workflow.support.actions.WorkspaceActionImpl;
@@ -402,7 +401,10 @@ public class ExecutorStepExecution extends AbstractStepExecutionImpl {
                         FlowNode flowNode = context.get(FlowNode.class);
                         flowNode.addAction(new WorkspaceActionImpl(workspace, flowNode));
                         listener.getLogger().println("Running on " + computer.getDisplayName() + " in " + workspace); // TODO hyperlink
-                        context.invokeBodyLater(exec, computer, env, workspace).addCallback(new Callback(cookie, lease));
+                        context.newBodyInvoker()
+                                .withContexts(exec, computer, env, workspace)
+                                .withCallback(new Callback(cookie, lease))
+                                .start();
                         LOGGER.log(Level.FINE, "started {0}", cookie);
                     } else {
                         // just rescheduled after a restart; wait for task to complete
